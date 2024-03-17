@@ -1,0 +1,71 @@
+package ldap
+
+import (
+    "fmt"
+    "log"
+    "sync"
+    "bytes"
+    "strings"
+    "regexp"
+    "io/ioutil"
+
+    "github.com/go-ldap/ldap/v3"
+    //"github.com/go-errors/errors"
+    
+    "gintemplate/utils/config"
+)
+
+var Lock *sync.RWMutex
+var db *ldap.Conn
+
+func init() {
+    Lock = new(sync.RWMutex)
+    Lock.Lock()
+    defer Lock.Unlock()
+    db, err = ldap.DialURL(config.LDAPURL)
+    if err != nil {
+        log.Fatalln(err)
+    }
+    db.Bind(config.LDAPBINDDN, config.LDAPBINDPASSWD)
+}
+
+func basedn() string {
+    dn := strings.Split(config.LDAPBINDDN, ",")
+    result := []string{}
+    matchdc := regexp.MustCompile(`^dc=.*$`)
+    for _, now := range dn {
+        if matchdc.MatchString(now) {
+            result = append(result, now)
+        }
+    }
+    return strings.Join(result, ",")
+}
+
+/*  subdn: The search base without basedn
+    filter: Filter object rule for example "(objectclass=person)"
+    attributes: The attributes you want. Enter nothing for get all. */
+func Query(subdn, filter string, attributes ...string) ([]*ldap.Entry, error) {
+    dn := basedn()
+    if subdn != "" {
+        dn = fmt.Sprintf("%s,%s", subdn, dn)
+    }
+    searchReq := ldap.NewSearchRequest(
+        dn,
+        ldap.ScopeWholeSubtree,
+        ldap.NeverDerefAliases,
+        0,
+        0,
+        false,
+        filter,
+        attributes,
+        nil,
+    )
+    Lock.RLock()
+    defer Lock.RUnlock()
+    result, err := db.Search(searchReq)
+    if err != nil {
+        return nil, err
+    }
+    return result.Entries, nil
+}
+

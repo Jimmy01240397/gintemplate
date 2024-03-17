@@ -1,0 +1,5 @@
+[Bb]in/
+*.bak
+.env
+*.db
+test.go
