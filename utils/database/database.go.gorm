@@ -1,0 +1,29 @@
+package database
+
+import (
+    "log"
+//    "fmt"
+
+//    "gorm.io/driver/mysql"
+    "gorm.io/gorm"
+    
+    "gintemplate/utils/config"
+)
+
+var db *gorm.DB
+
+func init() {
+    dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8&parseTime=True&loc=Local", config.DBUser, config.DBpasswd, config.DBHost, config.DBPort, config.DBname)
+    db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+    if err != nil {
+        log.Panicln(err)
+    }
+    sqlDB, err := db.DB()
+    sqlDB.SetMaxIdleConns(10)
+    sqlDB.SetMaxOpenConns(100)
+    sqlDB.SetConnMaxLifetime(time.Hour)
+}
+
+func GetDB() *gorm.DB {
+    return db
+}
