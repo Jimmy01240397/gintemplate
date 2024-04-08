@@ -15,6 +15,9 @@ import (
 
 func main() {
     defer database.Close()
+    if !config.Debug {
+        gin.SetMode(gin.ReleaseMode)
+    }
     store := cookie.NewStore([]byte(config.Secret))
     backend := gin.Default()
     backend.Use(errorHandler)
@@ -27,10 +30,14 @@ func main() {
 
 func panicHandler(c *gin.Context, err any) {
     goErr := errors.Wrap(err, 2)
+    errmsg := ""
+    if config.Debug {
+        errmsg = goErr.Error()
+    }
     errutil.AbortAndError(c, &errutil.Err{
         Code: 500,
         Msg: "Internal server error",
-        Data: goErr.Error(),
+        Data: errmsg,
     })
 }
 
@@ -46,10 +53,14 @@ func errorHandler(c *gin.Context) {
                 c.Status(myErr.Code)
             }
         } else {
+            errmsg := ""
+            if config.Debug {
+                errmsg = err.Error()
+            }
             c.JSON(500, gin.H{
                 "code": 500,
                 "msg": "Internal server error",
-                //"data": err.Error(),
+                "data": errmsg,
             })
         }
         return
