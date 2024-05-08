@@ -5,7 +5,7 @@ import (
     "strings"
     "reflect"
     "crypto/hmac"
-    "crypto/sha256"
+    "crypto/sha512"
     "encoding/base64"
     "encoding/json"
 //    "encoding/hex"
@@ -25,9 +25,17 @@ func New(pass string) Password {
     if pass == "" {
         return ""
     }
-    h := hmac.New(sha256.New, []byte(config.Secret))
+    salt := make([]byte, 16)
+    _, err := rand.Read(salt)
+    if err != nil {
+        panic("Generate password error!")
+    }
+    h := hmac.New(sha512.New, []byte(config.Secret))
+    //h := sha512.New()
     h.Write([]byte(pass))
-    return Password(base64.StdEncoding.EncodeToString(h.Sum(nil)))
+    h.Write(salt)
+    h.Sum(nil)
+    return Password(fmt.Sprintf("$6$%s$%s", base64.StdEncoding.EncodeToString(salt), base64.StdEncoding.EncodeToString(hashedPassword)))
 }
 
 func (c Password) MarshalJSON() ([]byte, error) {
