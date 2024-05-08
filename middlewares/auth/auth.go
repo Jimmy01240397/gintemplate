@@ -27,8 +27,9 @@ func AddMeta(c *gin.Context) {
     if username == nil {
         c.Set("isSignIn", false)
     } else {
-        userdata, _ := user.GetUser(username.(string))
-        if userdata == nil {
+        userdata, err := user.GetUser(username.(string))
+        c.Set("user", userdata)
+        if err != nil {
             c.Set("isSignIn", false)
         } else {
             c.Set("isSignIn", true)
