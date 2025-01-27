@@ -9,11 +9,12 @@ systemddir := /etc/systemd/system
 config := .env
 systemd := $(exe).service
 tags := release
+ldflags := -s -w
 
 all: $(builddir)/$(exe)
 
 $(builddir)/$(exe): main.go go.mod go.sum $(importdir)
-		$(builder) build -o $(builddir)/$(exe) -tags $(tags) $<
+		$(builder) build -o $(builddir)/$(exe) -tags $(tags) -ldflags "$(ldflags)" $<
 
 install: $(path)/$(exe) $(systemddir)/$(systemd)
 
